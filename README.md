@@ -23,12 +23,13 @@ The following table contains results obtained from overall model (best captions 
 |Result |Beam | BLEU-1 | BLEU-2 | BLEU-3| BLEU-4| METEOR | CIDEr | SPICE | ROUGE-L |
 |---|---|---|---|---|---|---|---|---|---|
 |Paper | 1 |  |  |  |  | |  |  |  |
-|Our | 1 |  |  |  |  | |  |  |  |
-|Our | 3 |  |  |  |  | |  |  |  |
-|Our | 5 |  |  |  |  | |  |  |  |
-|Our | 10 |  |  |  |  | |  |  |  |
-|Our | 15 |  |  |  |  | |  |  |  |
-|Our | 20 |  |  |  |  | |  |  |  |
+|Our | 1 | 0.632 | 0.436 | 0.286 | 0.181 | 0.193 | 0.455 | 0.127 | 0.441 |
+|Our | 3 | 0.602 | 0.418 | 0.277 | 0.179 | 0.174 | 0.454 | 0.124 | 0.425 |
+|Our | 5 | 0.583 | 0.403 | 0.269 | 0.176 | 0.169 | 0.453 | 0.121 | 0.420 |
+|Our | 10 | 0.563 | 0.394 | 0.265 | 0.171 | 0.165 | 0.421 | 0.118 | 0.421 |
+|Our | 15 | 0.546 | 0.380 | 0.254 | 0.160 | 0.162 | 0.414 | 0.117 | 0.413 |
+|Our | 20 | 0.535 | 0.371 | 0.247 | 0.155 | 0.158 | 0.406 | 0.116 | 0.409 |
+
 
 ### Reproducing the results:
 1. Download 'Karpathy Splits' for train, validation and testing from [here](http://cs.stanford.edu/people/karpathy/deepimagesent/caption_datasets.zip).
