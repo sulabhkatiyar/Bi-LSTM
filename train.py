@@ -14,13 +14,9 @@ from eval_val import evaluate
 import json
 import argparse
 
-# Data parameters
 data_folder = 'path_to_data_files'  # folder with data files saved by create_input_files.py
 data_name = 'flickr8k_5_cap_per_img_5_min_word_freq'  # base name shared by data files
 dataset='flickr8k'
-
-# Model parameters
-
 emb_dim = 512  
 attention_dim = 512  
 decoder_dim = 512  
@@ -28,7 +24,6 @@ dropout = 0.5
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  
 cudnn.benchmark = True  
 
-# Training parameters
 start_epoch = 0
 epochs = 20  # number of epochs to train for (if early stopping is not triggered)
 epochs_since_improvement = 0  # keeps track of number of epochs since there's been an improvement in validation BLEU
@@ -49,10 +44,6 @@ choice = 0
 
 
 def main():
-    """
-    Training and validation.
-    """
-
     global best_bleu1, best_bleu2, best_bleu3, best_bleu4, epochs_since_improvement, checkpoint, start_epoch, fine_tune_encoder
     global encoder_dim, data_name, word_map, guiding_bleu, choice, val_loader_single, device
 
@@ -195,26 +186,14 @@ def main():
     if not fine_tune_encoder:
         increase_run_number()
 
-def train(train_loader, encoder, decoder, criterion, encoder_optimizer, decoder_optimizer, epoch):
-    """
-    Performs one epoch's training.
-
-    :param train_loader: DataLoader for training data
-    :param encoder: encoder model
-    :param decoder: decoder model
-    :param criterion: loss layer
-    :param encoder_optimizer: optimizer to update encoder's weights (if fine-tuning)
-    :param decoder_optimizer: optimizer to update decoder's weights
-    :param epoch: epoch number
-    """
-
+def train(train_loader, encoder, decoder, criterion, encoder_optimizer, decoder_optimizer, epoch):   
     decoder.train()  # train mode (dropout and batchnorm is used)
     encoder.train()
 
-    batch_time = AverageMeter()  # forward prop. + back prop. time
-    data_time = AverageMeter()  # data loading time
-    losses = AverageMeter()  # loss (per word decoded)
-    top5accs = AverageMeter()  # top5 accuracy
+    batch_time = AverageMeter()  
+    data_time = AverageMeter()  
+    losses = AverageMeter()  
+    top5accs = AverageMeter() 
 
     start = time.time()
 
