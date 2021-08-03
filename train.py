@@ -21,12 +21,12 @@ dataset='flickr8k'
 
 # Model parameters
 
-emb_dim = 512  # dimension of word embeddings, have to change it to final embeddings size if using ensembles
-attention_dim = 512  # dimension of attention linear layers
-decoder_dim = 512  # dimension of decoder RNN
+emb_dim = 512  
+attention_dim = 512  
+decoder_dim = 512  
 dropout = 0.5
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # sets device for model and PyTorch tensors
-cudnn.benchmark = True  # set to true only if inputs to model are fixed size; otherwise lot of computational overhead
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  
+cudnn.benchmark = True  
 
 # Training parameters
 start_epoch = 0
@@ -37,12 +37,11 @@ workers = 1  # for data-loading; right now, only 1 works with h5py
 encoder_lr = 1e-4  # learning rate for encoder if fine-tuning
 decoder_lr = 4e-4  # learning rate for decoder
 grad_clip = 5.  # clip gradients at an absolute value of
-alpha_c = 1.  # regularization parameter for 'doubly stochastic attention', as in the paper
 best_bleu1, best_bleu2, best_bleu3, best_bleu4 = 0.,0.,0.,0.  # BLEU scores right now
 guiding_bleu= 1 # 1: BLEU 1, 2: BLEU-2, 3: BLEU-3, 4: BLEU4 #THE BLEU METRIC USED TO GUIDE THE PROCESS
 print_freq = 1000  # print training/validation stats every __ batches
 fine_tune_encoder = False  # fine-tune encoder?
-checkpoint = None # path to checkpoint 'BEST_checkpoint_flickr8khindi_5_cap_per_img_1_min_word_freq.pth.tar', None if none
+checkpoint = None # path to checkpoint; None if none
 
 encoder_dim=4096  
 use_image_transform=False
@@ -55,7 +54,7 @@ def main():
     """
 
     global best_bleu1, best_bleu2, best_bleu3, best_bleu4, epochs_since_improvement, checkpoint, start_epoch, fine_tune_encoder
-    global emb_dim, encoder_dim, data_name, word_map, guiding_bleu, embeddings_file, emb_folder, use_embeddings_ensemble, choice, val_loader_single, device
+    global encoder_dim, data_name, word_map, guiding_bleu, choice, val_loader_single, device
 
     # Remove previous checkpoints if they exist in same directory 
     if checkpoint == None:
