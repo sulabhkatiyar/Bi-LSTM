@@ -19,6 +19,7 @@ In the paper, both forward and backward LSTMs are trained to generate captions a
 ### Results
 
 **For Flickr8k dataset:**
+
 The following table contains results obtained from overall model (best captions selected from forward and backward LSTMs):
 |Result |Beam | BLEU-1 | BLEU-2 | BLEU-3| BLEU-4| METEOR | CIDEr | SPICE | ROUGE-L |
 |---|---|---|---|---|---|---|---|---|---|
