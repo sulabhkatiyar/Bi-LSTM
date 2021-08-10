@@ -35,17 +35,13 @@ grad_clip = 5.  # clip gradients at an absolute value of
 best_bleu1, best_bleu2, best_bleu3, best_bleu4 = 0.,0.,0.,0.  # BLEU scores right now
 guiding_bleu= 1 # 1: BLEU 1, 2: BLEU-2, 3: BLEU-3, 4: BLEU4 #THE BLEU METRIC USED TO GUIDE THE PROCESS
 print_freq = 1000  # print training/validation stats every __ batches
-fine_tune_encoder = False  # fine-tune encoder?
 checkpoint = None # path to checkpoint; None if none
 
 encoder_dim=4096  
-use_image_transform=False
-choice = 0
-
 
 def main():
-    global best_bleu1, best_bleu2, best_bleu3, best_bleu4, epochs_since_improvement, checkpoint, start_epoch, fine_tune_encoder
-    global encoder_dim, data_name, word_map, guiding_bleu, choice, val_loader_single, device
+    global best_bleu1, best_bleu2, best_bleu3, best_bleu4, epochs_since_improvement, checkpoint, start_epoch
+    global encoder_dim, data_name, word_map, guiding_bleu, val_loader_single, device
 
     # Remove previous checkpoints if they exist in same directory 
     if checkpoint == None:
@@ -66,14 +62,12 @@ def main():
                                        decoder_dim=decoder_dim,
                                        vocab_size=len(word_map),
                                        encoder_dim=encoder_dim,
-                                       dropout=dropout, choice=choice)
+                                       dropout=dropout)
 
         decoder_optimizer = torch.optim.Adam(params=filter(lambda p: p.requires_grad, decoder.parameters()),
                                              lr=decoder_lr)
         encoder = Encoder()
-        encoder.fine_tune(fine_tune_encoder)
-        encoder_optimizer = torch.optim.Adam(params=filter(lambda p: p.requires_grad, encoder.parameters()),
-                                             lr=encoder_lr) if fine_tune_encoder else None
+        encoder_optimizer = None
 
     else:
         checkpoint = torch.load(checkpoint)
@@ -84,39 +78,21 @@ def main():
         best_bleu2 = checkpoint['bleu_scores'][1]
         best_bleu1 = checkpoint['bleu_scores'][0]
         decoder = checkpoint['decoder']
-        # Note to self: Finish Ph.d quickly and don't waste too much time coding.
         decoder_optimizer = checkpoint['decoder_optimizer']
-        encoder = checkpoint['encoder']
-        
-        if fine_tune_encoder is True:
-            encoder.fine_tune(fine_tune_encoder)
-            encoder_optimizer = torch.optim.Adam(params=filter(lambda p: p.requires_grad, encoder.parameters()),
-                                                 lr=encoder_lr)
-        else:
-            encoder_optimizer = checkpoint['encoder_optimizer']
-
-
-    # Move to GPU, if available
+        encoder = checkpoint['encoder']                
+        encoder_optimizer = checkpoint['encoder_optimizer']
+    
     decoder = decoder.to(device)
     encoder = encoder.to(device)
 
     # Loss function
     criterion = nn.CrossEntropyLoss().to(device)
 
-    # Custom dataloaders
-    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                     std=[0.229, 0.224, 0.225])
-    horizontal=transforms.RandomHorizontalFlip(p=0.5)
-    vertical= transforms.RandomVerticalFlip(p=0.5)
-    totensor=transforms.ToTensor()
-    topil=transforms.ToPILImage()    
-
-    transforms_to_apply=[horizontal]
-    transforms_list=[topil] + transforms_to_apply + [totensor] if use_image_transform else []
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
     train_loader = torch.utils.data.DataLoader(
-        CaptionDataset(data_folder, data_name, 'TRAIN', transform=transforms.Compose(transforms_list + [normalize])),
-        batch_size=batch_size, shuffle=True, num_workers=workers, pin_memory=True)    #other transforms are topil,horizontal,vertical,totensor,
+        CaptionDataset(data_folder, data_name, 'TRAIN', transform=transforms.Compose([normalize])),
+        batch_size=batch_size, shuffle=True, num_workers=workers, pin_memory=True)   
 
     val_loader = torch.utils.data.DataLoader(
         CaptionDataset(data_folder, data_name, 'VAL', transform=transforms.Compose([normalize])),
@@ -128,7 +104,7 @@ def main():
     
     # Epochs
     for epoch in range(start_epoch, epochs):        
-        if epochs_since_improvement == 20:
+        if epochs_since_improvement == 4:
             break
         if epochs_since_improvement > 0 and epochs_since_improvement % 2 == 0:
             adjust_learning_rate(decoder_optimizer, 0.95)
@@ -171,23 +147,11 @@ def main():
             epochs_since_improvement = 0
         
         bleu_list=[recent_bleu1,recent_bleu2,recent_bleu3,recent_bleu4]
-
-        # Save validation set loss for each epoch in the file
-        with open('validation_logs.txt', 'a') as vl:
-            if epoch == 0:
-                vl.write('\n\nThe dataset is {}. \nThe BLEU scores for epoch {} are {}.\n'.format(data_name,epoch,bleu_list))
-            else:
-                vl.write('The BLEU scores for epoch {} are {}.\n'.format(epoch, bleu_list))
-
-        # Save checkpoint
         save_checkpoint(data_name, epoch, epochs_since_improvement, encoder, decoder, encoder_optimizer,
                         decoder_optimizer, bleu_list, is_best)
 
-    if not fine_tune_encoder:
-        increase_run_number()
-
 def train(train_loader, encoder, decoder, criterion, encoder_optimizer, decoder_optimizer, epoch):   
-    decoder.train()  # train mode (dropout and batchnorm is used)
+    decoder.train() 
     encoder.train()
 
     batch_time = AverageMeter()  
@@ -256,7 +220,7 @@ def train(train_loader, encoder, decoder, criterion, encoder_optimizer, decoder_
 
 
 def validate(val_loader, encoder, decoder, criterion):  
-    decoder.eval()  # eval mode (no dropout or batchnorm)
+    decoder.eval()  
     if encoder is not None:
         encoder.eval()
 
