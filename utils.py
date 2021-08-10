@@ -113,29 +113,6 @@ def init_embedding(embeddings):
     bias = np.sqrt(3.0 / embeddings.size(1))
     torch.nn.init.uniform_(embeddings, -bias, bias)
 
-def load_embeddings(emb_file, word_map):
-    with open(emb_file, 'r') as f:
-        emb_dim = len(f.readline().split(' ')) - 1
-    vocab = set(word_map.keys())
-
-    embeddings = torch.FloatTensor(len(vocab), emb_dim)
-    init_embedding(embeddings)
-
-    print("\nLoading embeddings...")
-    for line in open(emb_file, 'r'):
-        line = line.split(' ')
-
-        emb_word = line[0]
-        embedding = list(map(lambda t: float(t), filter(lambda n: n and not n.isspace(), line[1:])))
-
-        if emb_word not in vocab:
-            continue
-
-        embeddings[word_map[emb_word]] = torch.FloatTensor(embedding)
-
-    return embeddings, emb_dim
-
-
 def clip_gradient(optimizer, grad_clip):
     for group in optimizer.param_groups:
         for param in group['params']:
