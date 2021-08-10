@@ -13,12 +13,10 @@ cudnn.benchmark = True
 
 captions_dump=True
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-choice=0
-embeddings_ensemble_available=False
 
 
 def evaluate(loader, encoder, decoder, criterion, word_map, device):
-    global captions_dump, choice, embeddings_ensemble_available
+    global captions_dump
     
     empty_hypo = 0
     empty_hypo_r = 0    
@@ -31,39 +29,33 @@ def evaluate(loader, encoder, decoder, criterion, word_map, device):
     rev_word_map = {v: k for k, v in word_map.items()}
     vocab_size = len(word_map)
     image_names = list()
-    print("Evaluating on validation set...")
 
     for i, (image, caps, caplens, allcaps, image_name) in enumerate(
-            tqdm(loader, desc="EVALUATING WITHOUT Teacher Forcing")):
+            tqdm(loader, desc="EVALUATING ON VALIDATION SET")):
 
         k = beam_size
-        image = image.to(device)  # (1, 3, 256, 256)
+        image = image.to(device) 
 
         encoder_out = encoder(image) 
         encoder_dim = encoder_out.size(-1)
         encoder_out = encoder_out.view(1, encoder_dim)  
         encoder_out = encoder_out.expand(k, encoder_dim) 
-        k_prev_words = torch.LongTensor([[word_map['<start>']]] * k).to(device)  # (k, 1)
-        seqs = k_prev_words  # (k, 1)
-        top_k_scores = torch.zeros(k, 1).to(device)  # (k, 1)
+        k_prev_words = torch.LongTensor([[word_map['<start>']]] * k).to(device) 
+        seqs = k_prev_words  
+        top_k_scores = torch.zeros(k, 1).to(device) 
 
         complete_seqs = list()
         complete_seqs_scores = list()
         step = 1
-        if choice==0:
-            img_f, img_r = decoder.get_img_features(encoder_out)
-            h, c = torch.zeros_like(img_f), torch.zeros_like(img_f)
-            h1, c1 = torch.zeros_like(img_f), torch.zeros_like(img_f)
+
+        img_f, img_r = decoder.get_img_features(encoder_out)
+        h, c = torch.zeros_like(img_f), torch.zeros_like(img_f)
+        h1, c1 = torch.zeros_like(img_f), torch.zeros_like(img_f)
 
         while True:
-            if embeddings_ensemble_available == True:
-                embeddings = decoder.final_embeddings(decoder.embedding(k_prev_words)).squeeze(1)  
-            else:
-                embeddings = decoder.embedding(k_prev_words).squeeze(1)
-                
-            if choice==0:
-                h, c = decoder.decode_step1(embeddings, (h, c)) 
-                h1, c1 = decoder.decode_step2(torch.cat([h, img_f], dim = 1),(h1, c1))  
+            embeddings = decoder.embedding(k_prev_words).squeeze(1)                
+            h, c = decoder.decode_step1(embeddings, (h, c)) 
+            h1, c1 = decoder.decode_step2(torch.cat([h, img_f], dim = 1),(h1, c1))  
 
             scores = decoder.fc(h1) 
             scores = F.log_softmax(scores, dim=1)
@@ -85,16 +77,15 @@ def evaluate(loader, encoder, decoder, criterion, word_map, device):
             if len(complete_inds) > 0:
                 complete_seqs.extend(seqs[complete_inds].tolist())
                 complete_seqs_scores.extend(top_k_scores[complete_inds])
-            k -= len(complete_inds)  # reduce beam length accordingly
+            k -= len(complete_inds)  
 
             if k == 0:
                 break
             seqs = seqs[incomplete_inds]
-            if choice==0:
-                h = h[prev_word_inds[incomplete_inds]]
-                c = c[prev_word_inds[incomplete_inds]]
-                img_f = img_f[prev_word_inds[incomplete_inds]]
-                h1, c1 = h1[prev_word_inds[incomplete_inds]], c1[prev_word_inds[incomplete_inds]]
+            h = h[prev_word_inds[incomplete_inds]]
+            c = c[prev_word_inds[incomplete_inds]]
+            img_f = img_f[prev_word_inds[incomplete_inds]]
+            h1, c1 = h1[prev_word_inds[incomplete_inds]], c1[prev_word_inds[incomplete_inds]]
 
             encoder_out = encoder_out[prev_word_inds[incomplete_inds]]
             top_k_scores = top_k_scores[incomplete_inds].unsqueeze(1)
@@ -115,15 +106,13 @@ def evaluate(loader, encoder, decoder, criterion, word_map, device):
         complete_seqs_r = list()
         complete_seqs_scores_r = list()
         step = 1
-        if choice==0:
-            hr, cr = torch.zeros_like(img_r), torch.zeros_like(img_r)
-            hr1, cr1 = torch.zeros_like(img_r), torch.zeros_like(img_r)
+        hr, cr = torch.zeros_like(img_r), torch.zeros_like(img_r)
+        hr1, cr1 = torch.zeros_like(img_r), torch.zeros_like(img_r)
 
         while True:
             embeddings_reverse = decoder.embedding_reverse(k_prev_words_r).squeeze(1)                
-            if choice==0:
-                hr, cr = decoder.decode_step_reverse1(embeddings_reverse,(hr, cr)) 
-                hr1, cr1 = decoder.decode_step_reverse2(torch.cat([hr, img_r], dim = 1),(hr1, cr1))
+            hr, cr = decoder.decode_step_reverse1(embeddings_reverse,(hr, cr)) 
+            hr1, cr1 = decoder.decode_step_reverse2(torch.cat([hr, img_r], dim = 1),(hr1, cr1))
             scores_r = decoder.fc_r(hr1)  
             scores_r = F.log_softmax(scores_r, dim=1)
 
@@ -145,22 +134,20 @@ def evaluate(loader, encoder, decoder, criterion, word_map, device):
             if len(complete_inds_r) > 0:
                 complete_seqs_r.extend(seqs_r[complete_inds_r].tolist())
                 complete_seqs_scores_r.extend(top_k_scores_r[complete_inds_r])
-            k -= len(complete_inds_r)  # reduce beam length accordingly
+            k -= len(complete_inds_r) 
 
             if k == 0:
                 break
             seqs_r = seqs_r[incomplete_inds_r]
-            if choice==0:
-                hr = hr[prev_word_inds_r[incomplete_inds_r]]
-                cr = cr[prev_word_inds_r[incomplete_inds_r]]
-                img_r = img_r[prev_word_inds_r[incomplete_inds_r]]
-                hr1, cr1 = hr1[prev_word_inds_r[incomplete_inds_r]], cr1[prev_word_inds_r[incomplete_inds_r]]
+            hr = hr[prev_word_inds_r[incomplete_inds_r]]
+            cr = cr[prev_word_inds_r[incomplete_inds_r]]
+            img_r = img_r[prev_word_inds_r[incomplete_inds_r]]
+            hr1, cr1 = hr1[prev_word_inds_r[incomplete_inds_r]], cr1[prev_word_inds_r[incomplete_inds_r]]
     
             encoder_out = encoder_out[prev_word_inds_r[incomplete_inds_r]]
             top_k_scores_r = top_k_scores_r[incomplete_inds_r].unsqueeze(1)
             k_prev_words_r = next_word_inds_r[incomplete_inds_r].unsqueeze(1)
 
-            # Break if things have been going on too long
             if step > 50:
                 break
             step += 1
