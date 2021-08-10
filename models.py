@@ -36,7 +36,7 @@ class Encoder(nn.Module):
 
 class DecoderWithAttention_choice(nn.Module):
 
-    def __init__(self, embed_dim, decoder_dim, vocab_size, encoder_dim=2048, dropout=0.5,choice=0, final_embeddings_dim=512, num_layers=2):
+    def __init__(self, embed_dim, decoder_dim, vocab_size, encoder_dim=2048, dropout=0.5):
         super(DecoderWithAttention_choice, self).__init__()
 
         self.encoder_dim = encoder_dim
