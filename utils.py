@@ -32,7 +32,7 @@ def create_input_files(dataset, karpathy_json_path, image_folder, captions_per_i
         if len(captions) == 0:
             continue
 
-        path = os.path.join(image_folder, img['filepath'], img['filename']) if dataset in ['coco','hindivg', 'cocohindi'] else os.path.join(
+        path = os.path.join(image_folder, img['filepath'], img['filename']) if dataset in ['coco'] else os.path.join(
             image_folder, img['filename'])
 
         if img['split'] in {'train', 'restval'}:
